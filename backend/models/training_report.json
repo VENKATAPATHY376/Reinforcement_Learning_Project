@@ -1,0 +1,159 @@
+{
+  "generated_at": "2026-10-16T20:23:08",
+  "notebook": "Dynamic_Pricing_RL_Training.ipynb",
+  "dataset": {
+    "path": "dynamic_pricing_synthetic_dataset.csv",
+    "resolved_path": "C:\\Users\\VENKAT\\Downloads\\dynamic_pricing_synthetic_dataset.csv",
+    "rows_used": 87600,
+    "synthetic": true
+  },
+  "seed": 42,
+  "timesteps": {
+    "dqn": 1000,
+    "qrdqn": 1000,
+    "ppo": 1000
+  },
+  "training_seconds": {
+    "dqn": 12.3,
+    "qr-dqn": 11.7,
+    "ppo": 8.3
+  },
+  "observation": {
+    "order": [
+      "price",
+      "inventory",
+      "demand",
+      "competitor_price",
+      "conversion_rate",
+      "season_index"
+    ],
+    "normalized": true,
+    "scaler_file": "obs_scaler.joblib",
+    "demand_model_file": "demand_model.joblib",
+    "demand_model_features": [
+      "price",
+      "competitor_price",
+      "inventory",
+      "season",
+      "promotion",
+      "hour",
+      "weekday"
+    ],
+    "demand_holdout_mae": 46.767,
+    "demand_holdout_r2": 0.1149
+  },
+  "actions": {
+    "0": "Reduce price by 10%",
+    "1": "Reduce price by 5%",
+    "2": "Hold current price",
+    "3": "Increase price by 5%",
+    "4": "Increase price by 10%"
+  },
+  "action_changes": {
+    "0": -0.1,
+    "1": -0.05,
+    "2": 0.0,
+    "3": 0.05,
+    "4": 0.1
+  },
+  "price_bounds": {
+    "min": 448.15,
+    "max": 3208.55
+  },
+  "reward": "revenue - 0.5 * stockout_penalty(500) - 0.2 * abs(price_change)",
+  "evaluation": {
+    "protocol": "identical seeds, identical held-out initial conditions, same env/demand model/reward",
+    "episodes": 20,
+    "max_steps_per_episode": 30,
+    "seeds": [
+      10000,
+      10019
+    ],
+    "strategies": [
+      "Fixed-price baseline",
+      "Rule-based",
+      "DQN",
+      "QR-DQN",
+      "PPO"
+    ]
+  },
+  "algorithms": {
+    "dqn": {
+      "model_file": "dqn_pricing_model.zip",
+      "class": "stable_baselines3.dqn.dqn.DQN",
+      "timesteps": 1000,
+      "training_seconds": 12.3,
+      "evaluation": {
+        "strategy": "DQN",
+        "total_revenue": 18305611.57,
+        "units_sold": 16650,
+        "avg_selling_price": 1099.44,
+        "avg_reward": 914845.98,
+        "stockout_frequency": 0.6,
+        "remaining_inventory": 136.5,
+        "price_change_frequency": 1.0,
+        "training_seconds": 12.3
+      }
+    },
+    "qrdqn": {
+      "model_file": "qrdqn_pricing_model.zip",
+      "class": "sb3_contrib.qrdqn.qrdqn.QRDQN",
+      "timesteps": 1000,
+      "training_seconds": 11.7,
+      "evaluation": {
+        "strategy": "QR-DQN",
+        "total_revenue": 15074607.24,
+        "units_sold": 17405,
+        "avg_selling_price": 866.11,
+        "avg_reward": 753436.91,
+        "stockout_frequency": 0.65,
+        "remaining_inventory": 98.8,
+        "price_change_frequency": 1.0,
+        "training_seconds": 11.7
+      }
+    },
+    "ppo": {
+      "model_file": "ppo_pricing_model.zip",
+      "class": "stable_baselines3.ppo.ppo.PPO",
+      "timesteps": 1000,
+      "training_seconds": 8.3,
+      "evaluation": {
+        "strategy": "PPO",
+        "total_revenue": 19968485.92,
+        "units_sold": 15359,
+        "avg_selling_price": 1300.12,
+        "avg_reward": 997924.82,
+        "stockout_frequency": 0.6,
+        "remaining_inventory": 201.1,
+        "price_change_frequency": 0.831,
+        "training_seconds": 8.3
+      }
+    }
+  },
+  "baselines": {
+    "fixed_price": {
+      "strategy": "Fixed-price baseline",
+      "total_revenue": 18580446.08,
+      "units_sold": 16636,
+      "avg_selling_price": 1116.88,
+      "avg_reward": 928847.3,
+      "stockout_frequency": 0.7,
+      "remaining_inventory": 137.2,
+      "price_change_frequency": 0.0,
+      "training_seconds": null
+    },
+    "rule_based": {
+      "strategy": "Rule-based",
+      "total_revenue": 18457659.88,
+      "units_sold": 16666,
+      "avg_selling_price": 1107.5,
+      "avg_reward": 922705.13,
+      "stockout_frequency": 0.7,
+      "remaining_inventory": 135.7,
+      "price_change_frequency": 0.014,
+      "training_seconds": null
+    }
+  },
+  "summary_file": "rl_algorithm_summary.csv",
+  "disclaimer": "All training and evaluation results are synthetic simulation results produced from a synthetic dataset. They demonstrate the prototype pipeline only and make no claim of real-world profitability or of any algorithm outperforming another."
+}

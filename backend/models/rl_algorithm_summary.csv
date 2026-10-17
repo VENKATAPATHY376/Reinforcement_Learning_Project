@@ -1,0 +1,6 @@
+strategy,total_revenue,units_sold,avg_selling_price,avg_reward,stockout_frequency,remaining_inventory,price_change_frequency,training_seconds
+Fixed-price baseline,18580446.08,16636,1116.88,928847.3,0.7,137.2,0.0,
+Rule-based,18457659.88,16666,1107.5,922705.13,0.7,135.7,0.014,
+DQN,18305611.57,16650,1099.44,914845.98,0.6,136.5,1.0,12.3
+QR-DQN,15074607.24,17405,866.11,753436.91,0.65,98.8,1.0,11.7
+PPO,19968485.92,15359,1300.12,997924.82,0.6,201.1,0.831,8.3
