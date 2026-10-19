@@ -289,9 +289,9 @@ Errors:
 
 | Case | Code | Body |
 |---|---|---|
-| `algorithm` not in `dqn, qrdqn, ppo` | **400** | `{"detail":"Unsupported algorithm 'bad'. Supported values: dqn, qrdqn, ppo"}` |
-| `season` invalid | **400** | `{"detail":"season must be one of: regular, summer, monsoon, festival"}` |
-| Malformed body / wrong types | **422** | FastAPI validation error |
+| `algorithm` not in `dqn, qrdqn, ppo` | **400** | `{"detail":"Algorithm bogus not supported. Available: ['dqn', 'ppo', 'qrdqn']"}` |
+| `season` invalid | **400** | `{"detail":"Invalid season. Must be one of ['regular', 'summer', 'monsoon', 'festival']"}` |
+| Malformed body / wrong types | **422** | FastAPI validation error (array in `detail`) |
 
 ### `GET /api/evaluation`
 

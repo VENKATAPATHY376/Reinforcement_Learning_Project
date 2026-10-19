@@ -140,10 +140,10 @@ def apply_price_bounds(current_price: float, recommended_price: float) -> float:
 
 
 class PredictRequest(BaseModel):
-    price: float
+    # camelCase names match the frontend client and PROJECT_DOCUMENTATION.md.
+    currentPrice: float
     inventory: float
-    demand: float = 0.0
-    competitor_price: float = 800.0
+    competitorPrice: float = 800.0
     season: str = "regular"
     algorithm: str = "dqn"
     promotion: int = 0
@@ -153,18 +153,21 @@ class PredictRequest(BaseModel):
 
 class PredictResponse(BaseModel):
     algorithm: str
-    action: int
-    action_label: str
-    recommended_price: float
-    current_price: float
-    inventory: float
-    demand: float
-    sales_estimate: int
-    revenue_estimate: float
-    conversion_rate: float
+    action: str
+    actionIndex: int
+    actionChange: float
+    recommendedPrice: float
+    currentPrice: float
+    demand: int
+    expectedDemand: int
+    conversionRate: float
+    expectedSales: int
+    expectedRevenue: float
+    baselineRevenue: float
+    revenueImpact: float
+    reward: float
+    modelLoaded: bool
     explanation: str
-    model_loaded: bool
-    reward_estimate: float
 
 
 @app.post("/api/predict", response_model=PredictResponse)
@@ -177,9 +180,13 @@ def predict(req: PredictRequest):
     if season not in SEASONS:
         raise HTTPException(status_code=400, detail=f"Invalid season. Must be one of {SEASONS}")
 
-    d = calculate_demand(req.price, req.inventory, req.competitor_price, season, req.promotion, req.hour, req.weekday)
-    conv = calculate_conversion_rate(req.price, req.competitor_price)
-    obs = build_observation(req.price, req.inventory, d, req.competitor_price, conv, season)
+    price = float(req.currentPrice)
+    inventory = float(req.inventory)
+    competitor = float(req.competitorPrice)
+
+    d = calculate_demand(price, inventory, competitor, season, req.promotion, req.hour, req.weekday)
+    conv = calculate_conversion_rate(price, competitor)
+    obs = build_observation(price, inventory, d, competitor, conv, season)
 
     model = models[alg]
     action, _ = model.predict(obs, deterministic=True)
@@ -187,27 +194,39 @@ def predict(req: PredictRequest):
     if action < 0 or action > 4:
         action = 2
 
-    rec = apply_price_bounds(req.price, req.price * (1.0 + ACTION_MAP.get(action, 0.0)))
-    conv_r = calculate_conversion_rate(rec, req.competitor_price)
-    sales = calculate_sales(d, conv_r, int(req.inventory))
+    action_change = ACTION_MAP.get(action, 0.0)
+    label = ACTION_LABELS.get(action, "Hold current price")
+
+    # Recommended-action economics
+    rec = apply_price_bounds(price, price * (1.0 + action_change))
+    conv_r = calculate_conversion_rate(rec, competitor)
+    sales = calculate_sales(d, conv_r, int(inventory))
     rev = sales * rec
-    inv_after = int(req.inventory) - sales
-    rew = calculate_reward(sales, rec, inv_after, req.price)
+    inv_after = int(inventory) - sales
+    rew = calculate_reward(sales, rec, inv_after, price)
+
+    # Current-price baseline economics (same model demand, no price change)
+    baseline_sales = calculate_sales(d, conv, int(inventory))
+    baseline_rev = baseline_sales * price
+    revenue_impact = ((rev - baseline_rev) / baseline_rev * 100.0) if baseline_rev > 0 else 0.0
 
     return PredictResponse(
         algorithm=alg,
-        action=action,
-        action_label=ACTION_LABELS.get(action, "Hold"),
-        recommended_price=round(rec, 2),
-        current_price=round(req.price, 2),
-        inventory=float(req.inventory),
-        demand=float(d),
-        sales_estimate=sales,
-        revenue_estimate=round(rev, 2),
-        conversion_rate=round(conv_r, 4),
-        explanation=f"{ACTION_LABELS.get(action)} -> {rec:.2f}",
-        model_loaded=bool(models),
-        reward_estimate=round(rew, 2),
+        action=label,
+        actionIndex=action,
+        actionChange=round(action_change, 4),
+        recommendedPrice=round(rec, 2),
+        currentPrice=round(price, 2),
+        demand=int(d),
+        expectedDemand=int(d),
+        conversionRate=round(conv_r, 4),
+        expectedSales=int(sales),
+        expectedRevenue=round(rev, 2),
+        baselineRevenue=round(baseline_rev, 2),
+        revenueImpact=round(revenue_impact, 2),
+        reward=round(rew, 2),
+        modelLoaded=bool(models),
+        explanation=f"{label} -> {rec:.2f}",
     )
 
 

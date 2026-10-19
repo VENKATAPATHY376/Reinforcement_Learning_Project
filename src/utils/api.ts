@@ -15,6 +15,36 @@ export interface PredictionResult extends SimulationResult {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
+/**
+ * Turn a FastAPI `detail` value into a readable string.
+ * A 422 validation error returns `detail` as an array of error objects, so a naive
+ * `new Error(detail)` would render `[object Object]`.
+ */
+function formatApiError(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string' && detail.trim()) return detail;
+
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          const entry = item as { loc?: unknown; msg?: unknown };
+          const loc = Array.isArray(entry.loc)
+            ? entry.loc.filter((part) => part !== 'body').join('.')
+            : '';
+          const msg = typeof entry.msg === 'string' ? entry.msg : JSON.stringify(item);
+          return loc ? `${loc}: ${msg}` : msg;
+        }
+        return String(item);
+      })
+      .filter(Boolean);
+    if (parts.length) return parts.join('; ');
+  }
+
+  if (detail && typeof detail === 'object') return JSON.stringify(detail);
+  return fallback;
+}
+
 export async function predictPricing(
   input: SimulationInput,
   algorithm: AlgorithmId = 'dqn',
@@ -32,12 +62,12 @@ export async function predictPricing(
     }),
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(data.detail ?? 'Prediction request failed');
+    throw new Error(formatApiError(data?.detail, 'Prediction request failed'));
   }
 
-  return data;
+  return data as PredictionResult;
 }
 
 export interface StrategyEvaluationRow {
@@ -71,10 +101,10 @@ export interface StrategyEvaluation {
 
 export async function fetchStrategyEvaluation(): Promise<StrategyEvaluation> {
   const response = await fetch(`${API_BASE}/api/evaluation`);
-  const data = await response.json();
+  const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data.detail ?? 'Strategy evaluation request failed');
+    throw new Error(formatApiError(data?.detail, 'Strategy evaluation request failed'));
   }
 
   return data as StrategyEvaluation;
